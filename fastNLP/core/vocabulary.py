@@ -415,6 +415,57 @@ class Vocabulary(object):
         """
         return self.__getitem__(w)
     
+    @_check_build_vocab
+    def save(self, vocab_file: str, delimiter: str='\t\t', config_file: str=None):
+        """
+        将字典保存在本地，不用每次都重复建立字典，直接从本地恢复,<pad>和<unknown>需要和保存之前一致.配置文件是包含当前已经包含的字典信息，而大多数
+        情况不需要配置信息，只需要word2idx和idx2word字典就足够。如果需要保存实例化的对象可以使用pickle。
+        """
+        import json
+        if config_file:
+            config_dict = {'max_size': self.max_size,
+                          'min_freq': self.min_freq,
+                          'unknown': self.unknown,
+                          'padding': self.padding,
+                          'rebuild': self.rebuild,
+                          'word_count': json.dumps(self.word_count),
+                          '_no_create_word': json.dumps(self._no_create_word)}
+            with open(config_file, 'w', encoding='utf-8') as f:
+                f.write(json.dumps(config_dict))
+        with open(vocab_file, 'w', encoding='utf-8') as f:
+            for word, index in self._word2idx.items():
+                f.write('{}{}{}\n'.format(word, delimiter, index))
+         
+    def restore(self, vocab_file: str, delimiter: str='\t\t', config_file: str=None):
+        """_
+        从本地恢复字典
+        """
+        import json
+        if config_file:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                config_dict = json.loads(f.read())
+                self.max_size = config_dict['max_size']
+                self.min_freq = config_dict['min_freq']
+                self.unknown = config_dict['unknown']
+                self.padding = config_dict['padding']
+                self.rebuild = config_dict['rebuild']
+                self.word_count = json.loads(config_dict['word_count'])
+                self._no_create_word = json.loads(config_dict['_no_create_word'])
+        else:
+            self.rebuild = False
+        self._word2idx, self._idx2word = {}, {}
+        with open(vocab_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if len(line) == 0:
+                    continue
+                item = line.split(delimiter)
+                if len(item) != 2:
+                    continue
+                word, idx = item[0], item[1]
+                self._word2idx[word] = idx
+                self._idx2word[idx] = word
+    
     @property
     @_check_build_vocab
     def unknown_idx(self):
