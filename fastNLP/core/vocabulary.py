@@ -420,6 +420,7 @@ class Vocabulary(object):
         """
         将字典保存在本地，不用每次都重复建立字典，直接从本地恢复,<pad>和<unknown>需要和保存之前一致.配置文件是包含当前已经包含的字典信息，而大多数
         情况不需要配置信息，只需要word2idx和idx2word字典就足够。如果需要保存实例化的对象可以使用pickle。
+        usage: vocab.save('vocab', config_file='vocab_config')
         """
         import json
         if config_file:
@@ -439,6 +440,7 @@ class Vocabulary(object):
     def restore(self, vocab_file: str, delimiter: str='\t\t', config_file: str=None):
         """_
         从本地恢复字典
+        usage: vocab.restore('vocab', config_file='vocab_config')
         """
         import json
         if config_file:
@@ -449,8 +451,8 @@ class Vocabulary(object):
                 self.unknown = config_dict['unknown']
                 self.padding = config_dict['padding']
                 self.rebuild = config_dict['rebuild']
-                self.word_count = json.loads(config_dict['word_count'])
-                self._no_create_word = json.loads(config_dict['_no_create_word'])
+                self.word_count = Counter(json.loads(config_dict['word_count']))
+                self._no_create_word = Counter(json.loads(config_dict['_no_create_word']))
         else:
             self.rebuild = False
         self._word2idx, self._idx2word = {}, {}
